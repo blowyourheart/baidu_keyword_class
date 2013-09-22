@@ -1,0 +1,40 @@
+cc_library(
+    name = 'vsm_text',
+    srcs = [
+      'vsm_text.cc',
+    ],
+    deps = [
+    '//base:base',
+    '//bi/social_mining/weibo/public/zone_detect:zone_detect',
+    '//nlp_goso/postagger/public:nlp_postagger',
+    '//util/segmenter/public:segmenter_base',
+    '//util/segmenter/internal:segmenter',
+    '//util/segmenter/internal:segmenter_manager',
+    '//util/segmenter/word_idf:word_idf_dict',
+    '//libs/third_party/re2:re2',
+    ],
+    )
+  
+cc_test(
+    name = 'vsm_text_unittest',
+    srcs = [
+      'vsm_text_unittest.cc',
+    ],
+    deps = [
+      '//base:base',
+      ':vsm_text',
+    ],
+    )
+
+cc_binary(
+    name = 'to_vsm',
+    srcs = [
+      'to_vsm.cc',
+    ],
+    deps = [
+      '//base:base',
+      ':vsm_text',
+      '//bi/social_mining/weibo/public/zone_detect:region_util',
+      '//util/global_init:global_init',
+    ],
+)
