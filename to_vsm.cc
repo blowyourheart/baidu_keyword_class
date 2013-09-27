@@ -43,8 +43,8 @@ void ProcessAQuery(const string& query, string* to) {
     string tuple = it->first;
     tuple.append(" ");
     tuple.append(IntToString(it->second.first));
-    tuple.append(" ");
-    tuple.append(DoubleToString(it->second.second));
+    // tuple.append(" ");
+    // tuple.append(DoubleToString(it->second.second));
     output.push_back(tuple);
   }
   *to = JoinString(output, "\t");
@@ -71,19 +71,21 @@ int main(int argc, char** argv) {
   while (getline(cin, line)) {
     vector<string> tokens;
     SplitString(line, '\t', &tokens);
-    CHECK_EQ(2, tokens.size()) << " tokens size != 2";
-    const string& query = tokens[0];
-    const string& label = tokens[1];
+    CHECK_GE(tokens.size(), 2) << " tokens size < 2";
+    const string& label = tokens[0];
+    const string& query = tokens[1];
+    size_t idx = line.find('\t');
+    const string query_title = line.substr(idx + 1);
     string vsm;
-    ProcessAQuery(query, &vsm);
+    ProcessAQuery(query_title, &vsm);
     if (vsm.empty()) {
       cerr
         << query << "\thas no feature"
         << endl;
     } else {
       cout
-        << query << '\t'
         << label << '\t'
+        << query << '\t'
         << vsm
         << endl;
     }

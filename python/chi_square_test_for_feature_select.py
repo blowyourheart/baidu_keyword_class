@@ -9,9 +9,14 @@ import os
 import logging
 
 
-# X: [label1 word0 word1 ...]
-# topK: return the topK chi value per category
 def ChiSquareTest(X, topK = 2000):
+  """
+    input:
+     X: [label1 word0 word1 ...]
+     topK: return the topK chi value per category
+    output:
+      {category:set(word), ....}
+    """
   N = len(X)
   category_cnt = {}
   word_label_cnt = {}
@@ -54,6 +59,7 @@ def ChiSquareTest(X, topK = 2000):
     res = sorted(res, key = lambda x : x[1], reverse = True)
     res_per_category[label] = res[:topK]
 
+  logging.info("processing X-chi test done")
   return res_per_category
 
 
@@ -70,29 +76,34 @@ def ReadFile(fileName):
 def FeatureSelectForGiveData(filename):
   content = ReadFile(filename)
   X = []
-  logging.debug("read file done")
+  logging.info("read file done")
   for line in content:
     line = line.split("\t")
-    tmp = [line[1]]
+    tmp = [line[0]]  # append label
+    # append each word
     for w in line[2:]:
       tokens = w.split()
-      if len(tokens) == 3:
+      if len(tokens) == 2:
         tmp.append(tokens[0])
       else:
         logging.warn("error token format %s"% w)
 
     X.append(tmp)
 
-  logging.debug("start chi square test")
-  category_map = ChiSquareTest(X, 7000)
+  logging.info("start chi square test")
+  category_map = ChiSquareTest(X, 10000)
   for (label, v) in category_map.items():
     for x in v:
       print "%s %s %f"%(label, x[0], x[1])
 
 
 def main():
-  logging.basicConfig(level = logging.INFO)
-  FeatureSelectForGiveData("keyword_class.train")
+  FeatureSelectForGiveData("../data/merge_keyword_class_title.tf.label")
 
 if __name__ == "__main__":
+  logging.basicConfig(
+      level = logging.INFO,
+      format="""%(asctime)s %(filename)s[line:%(lineno)d] 
+        %(levelname)s %(message)s""",
+      datefmt='%Y-%H:%M:%S')
   main()

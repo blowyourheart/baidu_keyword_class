@@ -40,8 +40,8 @@ VsmText::VsmText(const vector<segmenter::TokenTypeEnum> &includes) {
 namespace {
 bool FilterSemanticAttribute(const nlp::SemanticAttribute& attr) {
   return attr.puctuation ||
-    attr.stopword ||
-    attr.place_name;
+    // attr.place_name ||
+    attr.stopword;
 }
 
 bool DoNotSplitPhase(const nlp::SemanticAttribute& attr) {
