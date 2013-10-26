@@ -35,32 +35,46 @@ def main():
     logging.error("Usage: %s %s %s %s"%(sys.argv[0], a, b, c))
     exit(-1)
 
-  query_titles = {}
-  f = open(sys.argv[1])
-  for line in f:
-    line = line.rstrip()
-    tokens = line.split("\t")
-    tmp_set = set([ FilterGarbageTailingText(x) for x in tokens[1:]])
-    if tokens[0] not in query_titles:
-      query_titles[tokens[0]] = tmp_set
-    else:
-      logging.warn("duplicate query %s"%(tokens[0]))
-      query_titles[tokens[0]] |= tmp_set
-  f.close()
-
-  # read keyword_class_unique.txt results
-  # output the filter and merged info to target file
+  #read query title
+  query_category = {}
   f = open(sys.argv[2])
-  fout = open(sys.argv[3], 'w')
   for line in f:
     line = line.rstrip()
     tokens = line.split("\t")
     query, category = tokens[0], tokens[1]
-    if query in query_titles:
-      fout.write("%s\t%s\t%s\n"%(category, query, "\t".join(list(query_titles[query]))))
-    else:
-      fout.write("%s\t%s\n"%(category, query))
+    query_category[query] = category
   f.close()
+  logging.info("read %d query-category pair"%(len(query_category)))
+
+  # read keyword_title.txt results
+  # output the filter and merged info to target file
+  f = open(sys.argv[1])
+  fout = open(sys.argv[3], 'w')
+  query_has_title = set()
+  write_cnt = 0
+  for line in f:
+    line = line.rstrip()
+    tokens = line.split("\t")
+    query = tokens[0]
+    tmp_set = set([ FilterGarbageTailingText(x) for x in tokens[1:]])
+    if query not in query_category:
+      logging.debug("%s not in keyword_class.txt"%query)
+      continue
+    else:
+      fout.write("%s\t%s\n"%(query_category[query], line))
+      query_has_title.add(query)
+      write_cnt += 1
+  f.close()
+  logging.info("join query_title done, write total %d"%write_cnt)
+
+
+  # output the query has no title
+  unique_cnt = 0
+  for (query, category) in query_category.iteritems():
+    if query not in query_has_title:
+      fout.write("%s\t%s\n"%(category, query))
+      unique_cnt += 1
+  logging.info("output %d unique query category"%(unique_cnt))
   fout.close()
 
 

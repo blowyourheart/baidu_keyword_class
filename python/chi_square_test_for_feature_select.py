@@ -9,27 +9,29 @@ import os
 import logging
 
 
-def ChiSquareTest(X, topK = 2000):
+
+def ChiSquareTest(Y, X, minDF = 3, topK = 2000):
   """
     input:
+     Y: [label1 label2 ...]
      X: [label1 word0 word1 ...]
      topK: return the topK chi value per category
     output:
       {category:set(word), ....}
     """
-  N = len(X)
+  N = len(Y)
   category_cnt = {}
   word_label_cnt = {}
 
-  for x in X:
+  for i in xrange(N):
     logging.debug("processing a record")
-    label = x[0]
+    label = Y[i]
     if label in category_cnt:
       category_cnt[label] += 1
     else:
       category_cnt[label] = 1
 
-    for w in x[1:]:
+    for w in X[i]:
       if w in word_label_cnt:
         if label in word_label_cnt[w]:
           word_label_cnt[w][label] += 1
@@ -47,6 +49,9 @@ def ChiSquareTest(X, topK = 2000):
     for (w, dis) in word_label_cnt.items():
       logging.debug("processing %s %s"%(label, w))
       total_occur = sum([v for (k, v) in dis.items()])
+      if total_occur < minDF:
+        logging.debug("%s DF = %d"%(w, total_occur))
+        continue
       if label in dis:
         A = dis[label]
         B = total_occur - A
@@ -73,17 +78,19 @@ def ReadFile(fileName):
     li.append(line)
   return li
 
-def FeatureSelectForGiveData(filename):
-  content = ReadFile(filename)
-  X = []
+def FeatureSelectForGiveData(remove_word_set):
+
+  Y, X = [], []
   logging.info("read file done")
-  for line in content:
+  for line in sys.stdin:
+    line = line.rstrip()
     line = line.split("\t")
-    tmp = [line[0]]  # append label
+    Y.append(line[0])
     # append each word
+    tmp = []
     for w in line[2:]:
       tokens = w.split()
-      if len(tokens) == 2:
+      if len(tokens) == 2 and tokens[0] not in remove_word_set:
         tmp.append(tokens[0])
       else:
         logging.warn("error token format %s"% w)
@@ -91,19 +98,23 @@ def FeatureSelectForGiveData(filename):
     X.append(tmp)
 
   logging.info("start chi square test")
-  category_map = ChiSquareTest(X, 10000)
+  if len(Y) != len(X):
+    logging.error("len(Y) = %d, len(X) = %d"%(len(Y), len(X)))
+    exit(-1)
+  category_map = ChiSquareTest(Y, X, 3, 10000)
   for (label, v) in category_map.items():
     for x in v:
       print "%s %s %f"%(label, x[0], x[1])
 
 
 def main():
-  FeatureSelectForGiveData("../data/merge_keyword_class_title.tf.label")
+  content = ReadFile("../data/remove_word.txt")
+  remove_word = set(content)
+  FeatureSelectForGiveData(remove_word)
 
 if __name__ == "__main__":
   logging.basicConfig(
       level = logging.INFO,
-      format="""%(asctime)s %(filename)s[line:%(lineno)d] 
-        %(levelname)s %(message)s""",
+      format="""%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s""",
       datefmt='%Y-%H:%M:%S')
   main()

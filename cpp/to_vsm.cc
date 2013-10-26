@@ -12,29 +12,15 @@
 #include <utility>
 #include <iostream>  // NOLINT
 
-#include "base/logging.h"
-#include "base/string_util.h"
-#include "base/scoped_ptr.h"
-#include "base/yr.h"
-#include "base/flags.h"
-#include "base/at_exit.h"
+#include "vsm_text.h"
 
-#include "file/file.h"
-#include "file/simple_line_reader.h"
+using namespace std;  // NOLINT
 
-#include "bi/social_mining/weibo/baidu/vsm_text.h"
-#include "bi/social_mining/weibo/public/zone_detect/region_util.h"
-
-using namespace social_mining;  // NOLINT
-using namespace segmenter;  // NOLINT
-using namespace social_mining::region_identify;  // NOLINT
-
-base::AtExitManager atExit;
-scoped_ptr<VsmText> VSM;
+VsmText* VSM;
 
 void ProcessAQuery(const string& query, string* to) {
   map<string, pair<int, double> > result;
-  VLOG(1) << "content: " << query;
+  // VLOG(1) << "content: " << query;
   VSM->GetWordFreqPair(query, &result);
 
   vector<string> output;
@@ -47,31 +33,25 @@ void ProcessAQuery(const string& query, string* to) {
     // tuple.append(DoubleToString(it->second.second));
     output.push_back(tuple);
   }
-  *to = JoinString(output, "\t");
+  *to = Join(output, "\t");
 }
 
 
 int main(int argc, char** argv) {
-  base::ParseCommandLineFlags(&argc, &argv, true);
-  {
-    // init data member here
-    TokenTypeEnum e[] = {segmenter::TokenType::CJK_WORD,
-      segmenter::TokenType::ENGLISH, segmenter::TokenType::DIGIT,
-      segmenter::TokenType::PHRASE, segmenter::TokenType::POINT_DIGIT,
-      segmenter::TokenType::FULLWIDTH_DIGIT};
-    vector<TokenTypeEnum> v(e, e + arraysize(e));
-    VsmText *simHash = new VsmText(v);
-    VSM.reset(simHash);
-    CHECK(VSM.get()) << "simHash init failed";
-    string stopWords = social_mining::GetYrDataPath(
-        "bi/social_mining/weibo/public/final_output/stopword_list");
-    VSM->AddStopWords(stopWords);
-  }
+  string tag[] = {
+    "n", "s", "f", "v", "a", "z", "d"
+  };
+  vector<string> tags(tag, tag + sizeof(tag) / sizeof(tag[0]));
+  VsmText vsm(tags);
+  VSM = &vsm;
   string line;
   while (getline(cin, line)) {
     vector<string> tokens;
-    SplitString(line, '\t', &tokens);
-    CHECK_GE(tokens.size(), 2) << " tokens size < 2";
+    split(line, "\t", &tokens);
+    if (tokens.size() < 2) {
+      cerr << " tokens size < 2" << endl;
+      exit(2);
+    }
     const string& label = tokens[0];
     const string& query = tokens[1];
     size_t idx = line.find('\t');
