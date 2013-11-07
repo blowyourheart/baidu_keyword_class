@@ -1,5 +1,5 @@
 CXX := g++
-CXXFLAGS := -O2 -Wall
+CXXFLAGS := -g -O2 -Wall
 BINS := vsm_text_unittest to_vsm
 
 all: $(BINS)
